@@ -12,6 +12,22 @@ export async function createCohort() {
   return new Cohort(createdCohort.id)
 }
 
+export async function getCohort(cohortId) {
+  const cohort = await dbClient.cohort.findUnique({
+    where: { id: cohortId },
+    // select: {
+    //   cohortName: true,
+    //   startDate: true,
+    //   endDate: true
+    // },
+    include: {
+      users: true
+    }
+  })
+
+  return cohort
+}
+
 export class Cohort {
   constructor(id = null) {
     this.id = id

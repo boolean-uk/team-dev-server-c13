@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,21 +8,17 @@ datasource db {
   // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-enum Role {
-  STUDENT
-  TEACHER
-}
-
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  password      String
-  role          Role      @default(STUDENT)
-  profile       Profile?
-  cohortId      Int?
-  cohort        Cohort?   @relation(fields: [cohortId], references: [id])
-  posts         Post[]
-  deliveryLogs  DeliveryLog[]
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  username     String?       @unique
+  password     String
+  cohortId     Int?
+  role         Role          @default(STUDENT)
+  cohort       Cohort?       @relation(fields: [cohortId], references: [id])
+  deliveryLogs DeliveryLog[]
+  posts        Post[]
+  profile      Profile?
 }
 
 model Profile {
@@ -36,34 +29,46 @@ model Profile {
   lastName    String
   bio         String?
   githubUrl   String?
-}
+  profilePicture String?
+  specialism  String? @default("")
+  mobile      String? @default("")
+  }
 
 model Cohort {
-  id            Int           @id @default(autoincrement())
-  users         User[]
-  deliveryLogs  DeliveryLog[]
+  id           Int           @id @default(autoincrement())
+  startDate    DateTime?
+  endDate      DateTime?
+  deliveryLogs DeliveryLog[]
+  users        User[]
 }
 
 model Post {
-  id      Int           @id @default(autoincrement())
+  id      Int    @id @default(autoincrement())
   content String
   userId  Int
-  user    User          @relation(fields: [userId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model DeliveryLog {
-  id        Int           @id @default(autoincrement())
-  date      DateTime
-  userId    Int
-  user      User          @relation(fields: [userId], references: [id])
-  cohortId  Int
-  cohort    Cohort        @relation(fields: [cohortId], references: [id])
-  lines     DeliveryLogLine[]
+  id       Int               @id @default(autoincrement())
+  date     DateTime
+  userId   Int
+  cohortId Int
+  cohort   Cohort            @relation(fields: [cohortId], references: [id])
+  user     User              @relation(fields: [userId], references: [id])
+  lines    DeliveryLogLine[]
 }
 
 model DeliveryLogLine {
-  id        Int           @id @default(autoincrement())
-  content   String
-  logId     Int
-  log       DeliveryLog   @relation(fields: [logId], references: [id])
+  id      Int         @id @default(autoincrement())
+  content String
+  logId   Int
+  log     DeliveryLog @relation(fields: [logId], references: [id])
+}
+
+enum Role {
+  STUDENT
+  TEACHER
 }

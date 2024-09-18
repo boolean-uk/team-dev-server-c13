@@ -59,6 +59,19 @@ export const getAll = async (req, res) => {
   }
 
   // Format the users for response
+  // eslint-disable-next-line camelcase
+  const { search } = req.query
+
+  if (!search || !search.trim()) {
+    const allUsers = await User.findAll()
+    return sendDataResponse(res, 200, { users: allUsers })
+  }
+
+  // remove any spaces around query, then split by one or more empty spaces
+  const formattedSearch = search.trim().split(/\s+/)
+
+  const foundUsers = await User.findManyByName(formattedSearch)
+
   const formattedUsers = foundUsers.map((user) => {
     return {
       ...user.toJSON().user
@@ -69,11 +82,76 @@ export const getAll = async (req, res) => {
 }
 
 export const updateById = async (req, res) => {
-  const { cohort_id: cohortId } = req.body
+  const id = Number(req.params.id)
+  const {
+    firstName,
+    lastName,
+    bio,
+    githubUrl,
+    cohortId,
+    profilePicture,
+    role,
+    username,
+    specialism,
+    mobile
+  } = req.body
 
-  if (!cohortId) {
-    return sendDataResponse(res, 400, { cohort_id: 'Cohort ID is required' })
+  try {
+    // Check user you want to update exists:
+    const foundUserId = await User.findById(id)
+
+    if (!foundUserId) {
+      return sendDataResponse(res, 404, { error: 'User not found' })
+    }
+
+    // Check whether user is authorised
+    const canUpdateProfile = req.user.id === id || req.user.role === 'TEACHER'
+
+    if (canUpdateProfile === false) {
+      return res
+        .status(403)
+        .json({ error: 'User not authorized to make this change.' })
+    }
+
+    if (req.user.id === id) {
+      if (!firstName || !lastName) {
+        return sendDataResponse(res, 400, {
+          error: 'First name and Last name is required'
+        })
+      }
+    }
+
+    // inject fields if not null in payload
+    const updateData = {
+      firstName,
+      lastName,
+      ...(bio && { bio }),
+      ...(githubUrl && { githubUrl }),
+      ...(profilePicture && { profilePicture }),
+      ...(username && { username }),
+      ...(specialism && { specialism }),
+      ...(mobile && { mobile })
+    }
+
+    if (req.user.role === 'TEACHER') {
+      if (cohortId) {
+        updateData.cohortId = cohortId
+      }
+
+      if (role) {
+        updateData.role = role
+      }
+    }
+    const updatedUser = await User.updateUser(id, updateData)
+    delete updatedUser.password
+    return sendDataResponse(res, 201, updatedUser)
+  } catch (e) {
+    if (e.code === 'P2002') {
+      return sendDataResponse(res, 400, {
+        error: 'A user with this username already exists'
+      })
+    }
+
+    return sendMessageResponse(res, 500, 'Server Error')
   }
-
-  return sendDataResponse(res, 201, { user: { cohort_id: cohortId } })
 }

@@ -19,14 +19,28 @@ export default class User {
       user.email,
       user.profile?.bio,
       user.profile?.githubUrl,
+      user.profile?.profilePicture,
       user.password,
-      user.role
+      user.role,
+      user.username,
+      user.profile.mobile,
+      user.profile.specialism,
+      user.cohortId ? user.cohort.startDate : null,
+      user.cohortId ? user.cohort.endDate : null
     )
   }
 
   static async fromJson(json) {
     // eslint-disable-next-line camelcase
-    const { firstName, lastName, email, biography, githubUrl, password } = json
+    const {
+      firstName,
+      lastName,
+      email,
+      bio,
+      githubUrl,
+      password,
+      profilePicture
+    } = json
 
     const passwordHash = await bcrypt.hash(password, 8)
 
@@ -36,8 +50,9 @@ export default class User {
       firstName,
       lastName,
       email,
-      biography,
+      bio,
       githubUrl,
+      profilePicture,
       passwordHash
     )
   }
@@ -50,8 +65,14 @@ export default class User {
     email,
     bio,
     githubUrl,
+    profilePicture,
     passwordHash = null,
-    role = 'STUDENT'
+    role = 'STUDENT',
+    username,
+    mobile,
+    specialism,
+    startDate,
+    endDate
   ) {
     this.id = id
     this.cohortId = cohortId
@@ -60,8 +81,14 @@ export default class User {
     this.email = email
     this.bio = bio
     this.githubUrl = githubUrl
+    this.profilePicture = profilePicture
     this.passwordHash = passwordHash
     this.role = role
+    this.username = username
+    this.mobile = mobile
+    this.specialism = specialism
+    this.startDate = cohortId ? startDate : null
+    this.endDate = cohortId ? endDate : null
   }
 
   toJSON() {
@@ -73,8 +100,14 @@ export default class User {
         firstName: this.firstName,
         lastName: this.lastName,
         email: this.email,
-        biography: this.bio,
-        githubUrl: this.githubUrl
+        bio: this.bio,
+        githubUrl: this.githubUrl,
+        profilePicture: this.profilePicture,
+        username: this.username,
+        mobile: this.mobile,
+        specialism: this.specialism,
+        startDate: this.startDate,
+        endDate: this.endDate
       }
     }
   }
@@ -111,7 +144,8 @@ export default class User {
     const createdUser = await dbClient.user.create({
       data,
       include: {
-        profile: true
+        profile: true,
+        cohort: true
       }
     })
 
@@ -127,7 +161,35 @@ export default class User {
   }
 
   static async findManyByFirstName(firstName) {
-    return User._findMany('firstName', firstName)
+    return User._findMany('name', firstName)
+  }
+
+  static async findManyByName(searchTerms) {
+    return dbClient.user.findMany({
+      where: {
+        OR: searchTerms.map((searchTerm) => [
+          {
+            profile: {
+              firstName: {
+                contains: searchTerm,
+                mode: 'insensitive' // Optional: Makes the search case-insensitive
+              }
+            }
+          },
+          {
+            profile: {
+              lastName: {
+                contains: searchTerm,
+                mode: 'insensitive'
+              }
+            }
+          }
+        ])
+      },
+      include: {
+        profile: true
+      }
+    })
   }
 
   static async findAll() {
@@ -140,7 +202,8 @@ export default class User {
         [key]: value
       },
       include: {
-        profile: true
+        profile: true,
+        cohort: true
       }
     })
 
@@ -169,5 +232,59 @@ export default class User {
     const foundUsers = await dbClient.user.findMany(query)
 
     return foundUsers.map((user) => User.fromDb(user))
+  }
+
+  static async updateUser(id, updateData) {
+    const {
+      firstName,
+      lastName,
+      bio,
+      githubUrl,
+      profilePicture,
+      cohortId,
+      role,
+      username,
+      specialism,
+      mobile
+    } = updateData
+
+    // Function to update profile id
+    const updatedUser = await dbClient.user.update({
+      where: { id: id },
+      data: { cohortId, role, username },
+      include: { profile: true, cohort: true }
+    })
+
+    const profileData = {
+      firstName,
+      lastName,
+      bio,
+      githubUrl,
+      profilePicture,
+      specialism,
+      mobile
+    }
+
+    // Function to update profile or create profile if it does not exist
+    if (updatedUser.profile) {
+      await dbClient.profile.update({
+        where: { userId: id },
+        data: profileData
+      })
+    } else {
+      await dbClient.profile.create({
+        data: {
+          userId: id,
+          ...profileData
+        }
+      })
+    }
+
+    const foundUser = await dbClient.user.findUnique({
+      where: { id: id },
+      include: { profile: true, cohort: true }
+    })
+
+    return User.fromDb(foundUser)
   }
 }
