@@ -83,10 +83,24 @@ export const getAll = async (req, res) => {
 
 export const updateById = async (req, res) => {
   const { cohort_id: cohortId } = req.body
+  const id = parseInt(req.params.id)
 
   if (!cohortId) {
     return sendDataResponse(res, 400, { cohort_id: 'Cohort ID is required' })
   }
 
-  return sendDataResponse(res, 201, { user: { cohort_id: cohortId } })
+  try {
+    const user = await User.findById(id)
+
+    if (!user) {
+      return sendDataResponse(res, 404, { id: 'User not found' })
+    }
+
+    user.cohort_id = cohortId
+    await user.save()
+
+    return sendDataResponse(res, 201, { user })
+  } catch (error) {
+    return sendMessageResponse(res, 500, 'Unable to update user')
+  }
 }
