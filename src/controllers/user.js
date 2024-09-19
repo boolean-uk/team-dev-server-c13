@@ -39,27 +39,27 @@ export const getAll = async (req, res) => {
   // Destructure first_name and last_name from query parameters
   const { first_name: firstName, last_name: lastName } = req.query
 
-  let foundUsers
+  let foundAllUsers
 
   // If both firstName and lastName are provided, search by both
   if (firstName && lastName) {
-    foundUsers = await User.findManyByFullName(firstName, lastName)
+    foundAllUsers = await User.findManyByFullName(firstName, lastName)
   }
   // If only firstName is provided, search by first name
   else if (firstName) {
-    foundUsers = await User.findManyByFirstName(firstName)
+    foundAllUsers = await User.findManyByFirstName(firstName)
   }
   // If only lastName is provided, search by last name
   else if (lastName) {
-    foundUsers = await User.findManyByLastName(lastName)
+    foundAllUsers = await User.findManyByLastName(lastName)
   }
   // If no search criteria, fetch all users
   else {
-    foundUsers = await User.findAll()
+    foundAllUsers = await User.findAll()
   }
 
   // Format the users for response
-  const formattedUsers = foundUsers.map((user) => {
+  const formattedUsers = foundAllUsers.map((user) => {
     return {
       ...user.toJSON().user
     }
