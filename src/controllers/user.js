@@ -94,6 +94,17 @@ export const updateById = async (req, res) => {
 
     if (!user) {
       return sendDataResponse(res, 404, { id: 'User not found' })
+      
+    // inject fields if not null in payload
+    const updateData = {
+      firstName,
+      lastName,
+      bio: bio === '' ? null : bio,
+      githubUrl: githubUrl === '' ? null : githubUrl,
+      profilePicture: profilePicture === '' ? null : profilePicture,
+      username: username === '' ? null : username,
+      specialism: specialism === '' ? null : specialism,
+      mobile: mobile === '' ? null : mobile
     }
 
     user.cohort_id = cohortId
