@@ -33,4 +33,7 @@ WORKDIR /app
 ENV NODE_ENV production
 ENV PATH /root/.volta/bin:$PATH
 
+RUN npm run db-reset
+RUN npm run migrate
+
 CMD [ "npm", "run", "start" ]

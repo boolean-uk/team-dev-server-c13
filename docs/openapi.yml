@@ -5,7 +5,7 @@ info:
   version: 1.0
 
 servers:
-  - url: http://localhost:4000/
+  - url: https://team-dev-server.fly.dev
 tags:
   - name: user
   - name: post
@@ -157,8 +157,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreatedUser'
-        '401':
+                $ref: '#/components/schemas/UpdatedUser'
+        '400':
+          description: fail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: fail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: fail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
           description: fail
           content:
             application/json:
@@ -191,6 +209,12 @@ paths:
                 $ref: '#/components/schemas/Post'
         400:
           description: fail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -285,6 +309,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /cohorts/{id}:
+    get:
+      tags:
+        - cohort
+      summary: Get cohort
+      description: get all information on cohort
+      operationId: getCohort
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: 'The id of the cohort that needs to be fetched.'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cohort'
+        '400':
+          description: fail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: fail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   securitySchemes:
@@ -371,10 +430,6 @@ components:
     UpdateUser:
       type: object
       properties:
-        email:
-          type: string
-        password:
-          type: string
         cohortId:
           type: integer
         role:
@@ -386,6 +441,14 @@ components:
         bio:
           type: string
         githubUrl:
+          type: string
+        profilePicture:
+          type: string
+        username:
+          type: string
+        mobile:
+          type: string
+        specialism:
           type: string
 
     Posts:
@@ -430,7 +493,46 @@ components:
                         type: string
                       profileImageUrl:
                         type: string
-    
+    UpdatedUser:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          properties:
+
+                id:
+                  type: integer
+                cohortId:
+                  type: integer
+                role:
+                  type: string
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                bio:
+                  type: string
+                githubUrl:
+                  type: string
+                profilePicture:
+                  type: string
+                username:
+                  type: string
+                mobile:
+                  type: string
+                specialism:
+                  type: string
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+
     CreatedUser:
       type: object
       properties:
@@ -457,13 +559,15 @@ components:
                   type: string
                 githubUrl:
                   type: string
-    login:
-      type: object
-      properties:
-        email:
-          type: string
-        password:
-          type: string
+
+      login:
+        login:
+          type: object
+          properties:
+            email:
+              type: string
+            password:
+              type: string
 
     loginRes:
       type: object

@@ -26,6 +26,11 @@ app.use('/posts', postRouter)
 app.use('/cohorts', cohortRouter)
 app.use('/logs', deliveryLogRouter)
 app.use('/', authRouter)
+app.get('/status', (req, res) => {
+  res.status(200).json({
+    ok: true
+  })
+})
 
 app.get('*', (req, res) => {
   res.status(404).json({
