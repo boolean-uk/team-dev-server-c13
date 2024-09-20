@@ -36,18 +36,43 @@ export const getById = async (req, res) => {
 }
 
 export const getAll = async (req, res) => {
-  // eslint-disable-next-line camelcase
-  const { first_name: firstName } = req.query
+  // Destructure first_name and last_name from query parameters
+  const { first_name: firstName, last_name: lastName } = req.query
 
-  let foundUsers
+  let foundAllUsers
 
-  if (firstName) {
-    foundUsers = await User.findManyByFirstName(firstName)
-  } else {
-    foundUsers = await User.findAll()
+  // If both firstName and lastName are provided, search by both
+  if (firstName && lastName) {
+    foundAllUsers = await User.findAll({
+      where: {
+        first_name: firstName,
+        last_name: lastName
+      }
+    })
+  }
+  // If only firstName is provided, search by first name
+  else if (firstName) {
+    foundAllUsers = await User.findAll({
+      where: {
+        first_name: firstName
+      }
+    })
+  }
+  // If only lastName is provided, search by last name
+  else if (lastName) {
+    foundAllUsers = await User.findAll({
+      where: {
+        last_name: lastName
+      }
+    })
+  }
+  // If no search criteria, fetch all users
+  else {
+    foundAllUsers = await User.findAll()
   }
 
-  const formattedUsers = foundUsers.map((user) => {
+  // Format the users for response
+  const formattedUsers = foundAllUsers.map((user) => {
     return {
       ...user.toJSON().user
     }
