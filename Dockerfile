@@ -1,21 +1,39 @@
-FROM node:20-bullseye as base
+FROM debian:bullseye as builder
+
+ARG NODE_VERSION=18.12.1
+
+RUN apt-get update; apt install -y curl
+RUN curl https://get.volta.sh | bash
+ENV VOLTA_HOME /root/.volta
+ENV PATH /root/.volta/bin:$PATH
+RUN volta install node@${NODE_VERSION}
+
+#######################################################################
 
 RUN mkdir /app
 WORKDIR /app
 
-COPY package.json package.json
+# NPM will not install any package listed in "devDependencies" when NODE_ENV is set to "production",
+# to install all modules: "npm install --production=false".
+# Ref: https://docs.npmjs.com/cli/v9/commands/npm-install#description
+
+ENV NODE_ENV production
+
+COPY . .
+
 RUN npm install
+FROM debian:bullseye
 
-FROM base as builder
+LABEL fly_launch_runtime="nodejs"
+
+COPY --from=builder /root/.volta /root/.volta
+COPY --from=builder /app /app
+
 WORKDIR /app
-COPY . .
-COPY --from=base /app/node_modules ./app/node_modules
-RUN npx prisma generate
+ENV NODE_ENV production
+ENV PATH /root/.volta/bin:$PATH
 
-FROM builder as runner
-WORKDIR /app
-COPY . .
-COPY --from=builder /app/node_modules ./app/node_modules
+RUN npm run db-reset
+RUN npm run migrate
 
-EXPOSE 4000
 CMD [ "npm", "run", "start" ]
