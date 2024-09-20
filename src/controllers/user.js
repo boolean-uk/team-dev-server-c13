@@ -43,15 +43,28 @@ export const getAll = async (req, res) => {
 
   // If both firstName and lastName are provided, search by both
   if (firstName && lastName) {
-    foundAllUsers = await User.findManyByFullName(firstName, lastName)
+    foundAllUsers = await User.findAll({
+      where: {
+        first_name: firstName,
+        last_name: lastName
+      }
+    })
   }
   // If only firstName is provided, search by first name
   else if (firstName) {
-    foundAllUsers = await User.findManyByFirstName(firstName)
+    foundAllUsers = await User.findAll({
+      where: {
+        first_name: firstName
+      }
+    })
   }
   // If only lastName is provided, search by last name
   else if (lastName) {
-    foundAllUsers = await User.findManyByLastName(lastName)
+    foundAllUsers = await User.findAll({
+      where: {
+        last_name: lastName
+      }
+    })
   }
   // If no search criteria, fetch all users
   else {
@@ -70,10 +83,24 @@ export const getAll = async (req, res) => {
 
 export const updateById = async (req, res) => {
   const { cohort_id: cohortId } = req.body
+  const id = parseInt(req.params.id)
 
   if (!cohortId) {
     return sendDataResponse(res, 400, { cohort_id: 'Cohort ID is required' })
   }
 
-  return sendDataResponse(res, 201, { user: { cohort_id: cohortId } })
+  try {
+    const user = await User.findById(id)
+
+    if (!user) {
+      return sendDataResponse(res, 404, { id: 'User not found' })
+    }
+
+    user.cohort_id = cohortId
+    await user.save()
+
+    return sendDataResponse(res, 201, { user })
+  } catch (error) {
+    return sendMessageResponse(res, 500, 'Unable to update user')
+  }
 }
